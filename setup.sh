@@ -66,7 +66,7 @@ install_deps() {
   NATIVE_OK="false"
 
   if [ "$NODE_OK" = "false" ]; then
-    log "Skipping npm install — Node not available"
+    log "Skipping pnpm install — Node not available"
     return
   fi
 
@@ -80,11 +80,11 @@ install_deps() {
   fi
 
   log "Running npm ci $npm_flags"
-  if npm ci $npm_flags >> "$LOG_FILE" 2>&1; then
+  if pnpm i --frozen-lockfile  $npm_flags >> "$LOG_FILE" 2>&1; then
     DEPS_OK="true"
-    log "npm install succeeded"
+    log "pnpm install succeeded"
   else
-    log "npm install failed"
+    log "pnpm install failed"
     return
   fi
 
