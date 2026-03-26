@@ -60,9 +60,9 @@ git remote add upstream https://github.com/qwibitai/nanoclaw.git
 
 运行`bash setup.sh` 并解析状态块。
 
-- 如果 NODE_OK=假，→ Node.js 缺失或过于旧。确认后使用`AskUserQuestion: Would you like me to install Node.js 22?`
-  - macOS：`brew install node@22`（如果有 brew），或者安装nvm，然后 `nvm install 25`
-  - Linux： `curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash - && sudo apt-get install -y nodejs` ， 或 nvm
+- 如果 NODE_OK=false，→ Node.js 缺失或过于旧。确认后使用`AskUserQuestion: Would you like me to install Node.js 25?`
+  - macOS：`brew install node@25`（如果有 brew），或者安装nvm，然后 `fnm install 25`
+  - Linux： `curl -fsSL https://deb.nodesource.com/setup_25.x | sudo -E bash - && sudo apt-get install -y nodejs` ， 或 nvm
   - 安装 Node 后，重新运行 `bash setup.sh`
 - 如果 DEPS_OK=false → 读取`log/setup.log`。试试：删除 `node_modules`，重跑 `bash setup.sh`。如果原生模块构建失败，安装构建工具（macOS上是`xcode-select --install` ，Linux 上是 `build-essential`），然后重新尝试。
 - 如果 NATIVE_OK=false → better-sqlite3 未能加载。安装构建工具并重新运行。
@@ -72,18 +72,18 @@ git remote add upstream https://github.com/qwibitai/nanoclaw.git
 
 运行 `npx tsx setup/index.ts --step environment` 并解析状态块。
 
-- 如果 HAS_AUTH=true→WhatsApp 已经配置好，请注意第 5 步
-- 如果 HAS_REGISTERED_GROUPS=true，→已存在配置，可以跳过或重新配置
+- 如果 HAS_AUTH=true → WhatsApp 已经配置好，请注意第 5 步
+- 如果 HAS_REGISTERED_GROUPS=true，→ 已存在配置，可以跳过或重新配置
 - 记录第 3 步的 Docker 和 APPLE_CONTAINER 值
 
 ## 3. 容器运行时
 
-### 3a. 选择运行时间
+### 3a. 选择runtime
 
 查看 `APPLE_CONTAINER` 和 `DOCKER` 的预检结果，以及第一步的 PLATFORM。
 
 - PLATFORM=linux → Docker（唯一选项）
-- PLATFORM=macos + APPLE_CONTAINER=已安装 → 使用 `AskUserQuestion: Docker (cross-platform) or Apple Container (native macOS?` If Apple Container，现在运行 `/convert-to-apple-container`，然后跳到 3c。
+- PLATFORM=macos + APPLE_CONTAINER=已安装 → 使用 `AskUserQuestion: Docker (cross-platform) or Apple Container (native macOS)?` If Apple Container，现在运行 `/convert-to-apple-container`，然后跳到 3c。
 - PLATFORM=macos + APPLE_CONTAINER=not_found → Docker
 
 ### 3a-docker. 安装 Docker
@@ -91,10 +91,10 @@ git remote add upstream https://github.com/qwibitai/nanoclaw.git
 - DOCKER=运行→继续到 4b
 - DOCKER=installed_not_running → start Docker： `open -a Docker` （macOS） 或 `sudo systemctl start docker` （Linux）.等 15 秒，重新核对 `docker 信息 `。
 - DOCKER=not_found → 如果确认使用`AskUserQuestion: Docker is required for running agents. Would you like me to install it?`
-  - macOS：通过 brew 安装——`cask docker`，然后`打开-a Docker`，等待它启动。如果无法使用 brew，直接下载到 Docker Desktop https://docker.com/products/docker-desktop
+  - macOS：通过 `brew install --cask docker`，然后`open -a Docker`，等待它启动。如果无法使用 brew，直接下载到 Docker Desktop https://docker.com/products/docker-desktop
   - Linux：用 `curl -fsSL https://get.docker.com | sh && sudo usermod -aG docker $USER` .注意：用户可能需要登出/登录才能获得组员资格。
 
-### 3b. 苹果容器转换门（如有需要）
+### 3b. Aple Container 转换门（如有需要）
 
 **如果选择的运行时是 Apple Container**，你必须检查源代码是否已经从 Docker 转换为 Apple 容器。千万不要跳过这一步。运行：
 
@@ -112,12 +112,12 @@ grep -q "CONTAINER_RUNTIME_BIN = 'container'" src/container-runtime.ts && echo "
 
 运行 `npx tsx setup/index.ts --step container -- --runtime <chosen>` 并解析状态块。
 
-**如果 BUILD_OK=假：** 读取`日志/setup.log` 尾部以查找构建错误。
+**如果 BUILD_OK=false：** 读取`log/setup.log` 尾部以查找构建错误。
 
 - 缓存问题（过时层）：`docker builder prune -f`（Docker）或 `container builder stop && container builder rm && container builder start` （Apple Container）。重试。
 - Dockerfile 语法或缺失文件：从日志中诊断并修复，然后再试。
 
-**如果 TEST_OK=假但 BUILD_OK=真：** 映像能建好但运行不了。检查日志——常见原因是运行时没有完全启动。等一下，再试一次。
+**如果 TEST_OK=false 但 BUILD_OK=true：** 映像能建好但运行不了。检查日志——常见原因是运行时没有完全启动。等一下，再试一次。
 
 ## 4. Claude 认证（无脚本）
 
@@ -135,7 +135,7 @@ AskUserQuestion（多选）：你想启用哪些消息频道？
 
 - WhatsApp（通过二维码或配对码进行身份验证）
 - Telegram（通过机器人令牌从@BotFather 认证）
-- Slack（通过带套接字模式的 Slack 应用认证）
+- Slack（通过带套接字模式的Slack app认证）
 - Discord（通过 Discord 机器人令牌认证）
 
 **将每个频道的专长委托给每个频道。** 每个通道技能负责其自身的代码安装、认证、注册和 JID 解析。这避免了通道特定逻辑的重复，并确保 JID 始终正确。
@@ -149,7 +149,7 @@ AskUserQuestion（多选）：你想启用哪些消息频道？
 
 每个技能都会：
 
-1. 安装通道代码（通过 `git 合并`技能分支）
+1. 安装通道代码（通过 `git merge`技能分支）
 2. 收集凭证/令牌并写入 `.env`
 3. 认证（WhatsApp 二维码/配对，或验证基于令牌的连接）
 4. 请用正确的 JID 格式注册聊天
@@ -163,24 +163,25 @@ npm install && npm run build
 
 如果构建失败，读取错误输出并修复（通常是缺少依赖）。然后继续进行第6步。
 
-## 6. 山准许名单
+## 6. Mount准许名单
 
 AskUserQuestion：代理访问外部目录？
 
-**不：** `npx tsx setup/index.ts --step mounts -- --empty` **是的：** 收集路径/权限。 `npx tsx setup/index.ts --step mounts -- --json '{"allowedRoots":[...],"blockedPatterns":[],"nonMainReadOnly":true}'`
+**No:** `npx tsx setup/index.ts --step mounts -- --empty`
+**Yes：** 收集路径/权限。 `npx tsx setup/index.ts --step mounts -- --json '{"allowedRoots":[...],"blockedPatterns":[],"nonMainReadOnly":true}'`
 
 ## 7. 开始服务
 
-如果服务已经运行：先卸货。
+如果服务已经运行：unload first。
 
 - macOS： `launchctl unload ~/Library/LaunchAgents/com.nanoclaw.plist`
-- Linux： `systemctl --user stop nanoclaw` （或者 `systemctl 如果 root 就停止 nanoclaw`）
+- Linux： `systemctl --user stop nanoclaw` （or `systemctl stop nanoclaw` if root）
 
-运行 `npx tsx setup/index.ts --step service` 并解析状态块。
+运行 `npx tsx setup/index.ts --step service` 并解析状态block。
 
 **如果 FALLBACK=wsl_no_systemd：** 检测到无 systemd 的 WSL。告诉用户他们可以在 WSL 中启用 systemd（ `echo -e "[boot]\nsystemd=true" | sudo tee /etc/wsl.conf` 然后重启 WSL），或者使用生成的 `start-nanoclaw.sh` 包装器。
 
-**如果 DOCKER_GROUP_STALE=真：** 用户在会话开始后被添加到了 docker 组——systemd 服务无法访问 Docker socket。请用户执行以下两个命令：
+**如果 DOCKER_GROUP_STALE=true：** 用户在会话开始后被添加到了 docker 组——systemd 服务无法访问 Docker socket。请用户执行以下两个命令：
 
 1. 立即解决办法： `sudo setfacl -m u:$(whoami):rw /var/run/docker.sock`
 2. 持久修复（每次重启 Docker 后重新应用）：
@@ -198,8 +199,8 @@ sudo systemctl daemon-reload
 
 **如果 SERVICE_LOADED=假：**
 
-- 请阅读`日志/setup.log` 以查找错误。
-- macOS：检查 `launchctl list | grep nanoclaw` 。如果 PID=`-` 且状态非零，则读取`日志/nanoclaw.error.log`。
+- 请阅读`log/setup.log` 以查找错误。
+- macOS：检查 `launchctl list | grep nanoclaw` 。如果 PID=`-` 且状态非零，则读取`log/nanoclaw.error.log`。
 - Linux：已完成 `systemctl --user status nanoclaw` 。
 - 修复后重新运行服务步骤。
 
@@ -220,11 +221,11 @@ sudo systemctl daemon-reload
 
 ## 故障排除
 
-**服务无法启动：** 查看`日志/nanoclaw.error.log`。常见情况：错误的节点路径（重跑第 7 步）、缺少 `.env`（第 4 步）、缺少信道凭证（重新调用信道技能）。
+**服务无法启动：** 查看`log/nanoclaw.error.log`。常见情况：错误的节点路径（重跑第 7 步）、缺少 `.env`（第 4 步）、缺少信道凭证（重新调用信道技能）。
 
 **容器代理失败（“Claude Code 进程以代码 1 退出”）：** 确保容器运行时正在运行——` 打开 -a Docker`（macOS Docker）、`容器系统启动`（Apple Container），或 `sudo systemctl start docker`（Linux）。请查看容器日志。 `groups/main/logs/container-*.log`
 
-**消息无回复：** 检查触发模式。主频道不需要前缀。查阅 DB： `npx tsx setup/index.ts --step verify` 。查看`日志/nanoclaw.log`。
+**消息无回复：** 检查触发模式。主频道不需要前缀。查阅 DB： `npx tsx setup/index.ts --step verify` 。查看`log/nanoclaw.log`。
 
 **频道无法连接：** 确认频道凭证是否设置在 `.env` 中。当信道的凭证存在时，它们会自动启用。关于 WhatsApp：检查商店 `/认证/creds.json`。对于基于令牌的信道：检查 `.env` 中的令牌值。任何更改 `.env` 后重启服务。
 
